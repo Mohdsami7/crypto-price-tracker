@@ -2,7 +2,9 @@
 
 A responsive React + Redux Toolkit application that simulates real-time cryptocurrency price tracking with a CoinMarketCap-like interface.
 
-## Setup Instructions
+# video link 
+https://drive.google.com/file/d/19-K3SH1V5PPcBICRT6GgbJl4hdByZBZp/view?usp=sharing
+## Setup Instructions 
 
 1. **Run the Application**:
    - Open the `index.html` file in a modern web browser.
