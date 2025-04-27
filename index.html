@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Crypto Price Tracker</title>
+        <script src="https://cdn.jsdelivr.net/npm/react@18.2.0/umd/react.development.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/react-dom@18.2.0/umd/react-dom.development.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/@babel/standalone@7.25.6/babel.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/@reduxjs/toolkit@1.9.5/dist/redux-toolkit.umd.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/react-redux@8.1.1/dist/react-redux.min.js"></script>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <style>
+          /* Prevent text size adjustments on mobile devices */
+          html, body {
+            -webkit-text-size-adjust: 100%; /* For older browsers */
+            text-size-adjust: 100%; /* Standard property for modern browsers */
+          }
+        </style>
+      </head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { createSlice, configureStore } = RTK;
+    const { Provider, useSelector, useDispatch } = ReactRedux;
+
+    // Sample initial crypto data
+    const initialCryptoData = [
+      {
+        id: 1,
+        name: "Bitcoin",
+        symbol: "BTC",
+        logo: "https://s2.coinmarketcap.com/static/img/coins/64x64/1.png",
+        price: 60000,
+        change1h: 0.5,
+        change24h: 1.2,
+        change7d: -2.3,
+        marketCap: 1120000000000,
+        volume24h: 35000000000,
+        circulatingSupply: 18700000,
+        maxSupply: 21000000,
+        chart7d: "https://via.placeholder.com/100x50?text=BTC+Chart"
+      },
+      {
+        id: 2,
+        name: "Ethereum",
+        symbol: "ETH",
+        logo: "https://s2.coinmarketcap.com/static/img/coins/64x64/1027.png",
+        price: 4000,
+        change1h: -0.3,
+        change24h: 0.8,
+        change7d: 3.1,
+        marketCap: 460000000000,
+        volume24h: 20000000000,
+        circulatingSupply: 115000000,
+        maxSupply: null,
+        chart7d: "https://via.placeholder.com/100x50?text=ETH+Chart"
+      },
+      {
+        id: 3,
+        name: "Tether",
+        symbol: "USDT",
+        logo: "https://s2.coinmarketcap.com/static/img/coins/64x64/825.png",
+        price: 1,
+        change1h: 0.01,
+        change24h: 0.02,
+        change7d: 0.01,
+        marketCap: 80000000000,
+        volume24h: 50000000000,
+        circulatingSupply: 80000000000,
+        maxSupply: null,
+        chart7d: "https://via.placeholder.com/100x50?text=USDT+Chart"
+      },
+      {
+        id: 4,
+        name: "Binance Coin",
+        symbol: "BNB",
+        logo: "https://s2.coinmarketcap.com/static/img/coins/64x64/1839.png",
+        price: 500,
+        change1h: 0.4,
+        change24h: -1.5,
+        change7d: 2.7,
+        marketCap: 75000000000,
+        volume24h: 1500000000,
+        circulatingSupply: 150000000,
+        maxSupply: 200000000,
+        chart7d: "https://via.placeholder.com/100x50?text=BNB+Chart"
+      },
+      {
+        id: 5,
+        name: "Cardano",
+        symbol: "ADA",
+        logo: "https://s2.coinmarketcap.com/static/img/coins/64x64/2010.png",
+        price: 1.5,
+        change1h: -0.2,
+        change24h: 0.9,
+        change7d: -1.8,
+        marketCap: 48000000000,
+        volume24h: 1200000000,
+        circulatingSupply: 32000000000,
+        maxSupply: 45000000000,
+        chart7d: "https://via.placeholder.com/100x50?text=ADA+Chart"
+      }
+    ];
+
+    // Redux slice
+    const cryptoSlice = createSlice({
+      name: "crypto",
+      initialState: { assets: initialCryptoData },
+      reducers: {
+        updateAsset: (state, action) => {
+          const index = state.assets.findIndex(asset => asset.id === action.payload.id);
+          if (index !== -1) {
+            state.assets[index] = { ...state.assets[index], ...action.payload };
+          }
+        }
+      }
+    });
+
+    const { updateAsset } = cryptoSlice.actions;
+
+    // Configure store
+    const store = configureStore({
+      reducer: {
+        crypto: cryptoSlice.reducer
+      }
+    });
+
+    // Simulated WebSocket
+    class MockWebSocket {
+      constructor() {
+        this.interval = setInterval(() => {
+          store.dispatch(updateAsset(this.generateUpdate()));
+        }, Math.random() * 1000 + 1000);
+      }
+
+      generateUpdate() {
+        const asset = initialCryptoData[Math.floor(Math.random() * initialCryptoData.length)];
+        return {
+          id: asset.id,
+          price: asset.price * (1 + (Math.random() - 0.5) * 0.02),
+          change1h: (Math.random() - 0.5) * 2,
+          change24h: (Math.random() - 0.5) * 5,
+          change7d: (Math.random() - 0.5) * 10,
+          volume24h: asset.volume24h * (1 + (Math.random() - 0.5) * 0.1)
+        };
+      }
+
+      close() {
+        clearInterval(this.interval);
+      }
+    }
+
+    // Crypto Table Row Component
+    const CryptoRow = ({ asset }) => {
+      const formatNumber = (num) => num ? num.toLocaleString("en-US", { maximumFractionDigits: 2 }) : "N/A";
+      const formatPrice = (num) => `$${num.toLocaleString("en-US", { maximumFractionDigits: 2 })}`;
+      const formatPercent = (num) => (
+        <span className={num >= 0 ? "text-green-500" : "text-red-500"}>
+          {num.toFixed(2)}%
+        </span>
+      );
+
+      return (
+        <tr className="border-b border-gray-200 hover:bg-gray-100">
+          <td className="py-3 px-4 text-center">{asset.id}</td>
+          <td className="py-3 px-4 flex items-center">
+            <img src={asset.logo} alt={asset.name} className="w-6 h-6 mr-2" />
+            <span>{asset.name}</span>
+          </td>
+          <td className="py-3 px-4">{asset.symbol}</td>
+          <td className="py-3 px-4">{formatPrice(asset.price)}</td>
+          <td className="py-3 px-4">{formatPercent(asset.change1h)}</td>
+          <td className="py-3 px-4">{formatPercent(asset.change24h)}</td>
+          <td className="py-3 px-4">{formatPercent(asset.change7d)}</td>
+          <td className="py-3 px-4">${formatNumber(asset.marketCap)}</td>
+          <td className="py-3 px-4">${formatNumber(asset.volume24h)}</td>
+          <td className="py-3 px-4">{formatNumber(asset.circulatingSupply)}</td>
+          <td className="py-3 px-4">{formatNumber(asset.maxSupply)}</td>
+          <td className="py-3 px-4">
+            <img src={asset.chart7d} alt={`${asset.name} 7d chart`} className="w-24 h-12" />
+          </td>
+        </tr>
+      );
+    };
+
+    // Crypto Table Component
+    const CryptoTable = () => {
+      const assets = useSelector(state => state.crypto.assets);
+
+      return (
+        <div className="container mx-auto p-4">
+          <h1 className="text-2xl font-bold mb-4">Crypto Price Tracker</h1>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm text-left">
+              <thead className="bg-gray-800 text-white">
+                <tr>
+                  <th className="py-3 px-4">#</th>
+                  <th className="py-3 px-4">Name</th>
+                  <th className="py-3 px-4">Symbol</th>
+                  <th className="py-3 px-4">Price</th>
+                  <th className="py-3 px-4">1h %</th>
+                  <th className="py-3 px-4">24h %</th>
+                  <th className="py-3 px-4">7d %</th>
+                  <th className="py-3 px-4">Market Cap</th>
+                  <th className="py-3 px-4">24h Volume</th>
+                  <th className="py-3 px-4">Circ. Supply</th>
+                  <th className="py-3 px-4">Max Supply</th>
+                  <th className="py-3 px-4">7D Chart</th>
+                </tr>
+              </thead>
+              <tbody>
+                {assets.map(asset => (
+                  <CryptoRow key={asset.id} asset={asset} />
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      );
+    };
+
+    // App Component
+    const App = () => {
+      React.useEffect(() => {
+        const ws = new MockWebSocket();
+        return () => ws.close();
+      }, []);
+
+      return (
+        <Provider store={store}>
+          <CryptoTable />
+        </Provider>
+      );
+    };
+
+    // Render
+    const root = ReactDOM.createRoot(document.getElementById("root"));
+    root.render(<App />);
+  </script>
+</body>
+</html>
+
